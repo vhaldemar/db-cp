@@ -1,0 +1,25 @@
+NameVirtualHost *:80
+<VirtualHost *:80>
+        ServerAdmin webmaster@dbcp
+        ServerName  dbcp
+        ServerAlias dbcp
+
+        # Indexes + Directory Root.
+        DocumentRoot /home/vhaldemar/git/db-cp/htdocs
+        DirectoryIndex index.pl
+
+        # CGI
+		PerlModule ModPerl::Registry
+#		ScriptAlias / /home/vhaldemar/git/db-cp/htdocs/
+		<Directory /home/vhaldemar/git/db-cp/htdocs>
+			Options +ExecCGI
+			addHandler perl-script .pl
+			PerlHandler ModPerl::Registry
+			PerlSendHeader On
+		</Directory>
+		PerlPostConfigRequire /home/vhaldemar/git/db-cp/htdocs/startup.pl
+
+        # Logfiles
+        ErrorLog  /home/vhaldemar/git/db-cp/logs/error.log
+        CustomLog /home/vhaldemar/git/db-cp/logs/access.log combined
+</VirtualHost>
