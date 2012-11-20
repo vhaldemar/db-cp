@@ -1,19 +1,19 @@
-package Main;
+package Footer;
 use strict;
 use warnings;
 use CGI qw(:standard);
 
-sub get { 
+sub get {
 	my ($isLogin) = shift;
 
-	my $inner = 'This is a main page';
+	my $inner = 'This is a footer';
 	if ($isLogin) {
-		$inner .= " (login)";
+
 	} else {
-		$inner .= " (not login)";
+
 	}
 
-	return div({-id => 'main'}, $inner).$\;
+	return div({-id => 'footer'}, $inner).$\;
 }
 
 sub print {

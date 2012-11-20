@@ -2,24 +2,39 @@ package Menu;
 use strict;
 use warnings;
 use CGI qw(:standard);
+use modules;
 
 sub get {
 	my ($isLogin) = shift;
+	my $inner;
 
-	my $inner = 'This is a menu'.$\;
-	$inner .= li("First href").$\;
-	$inner .= li("Second href").$\;
-
+	my $menu;
 	if ($isLogin) {
-		
+		$menu = Modules::getLoginMenu();
 	} else {
-
+		$menu = Modules::getNonLoginMenu();
 	}
 
-	return div({-id => 'menu'}, $inner).$\;
+	foreach (@{$menu}) {
+		$inner .= li(
+			{-class => 'menu_element'},
+			a({-href => $_->{dest}}, $_->{name}),
+		),
+	}
+
+	return div(
+		{
+			-id => 'menu',
+			-class => 'sidebar',
+		},
+		ul(
+			{-class => 'menu_list'},
+			$inner
+		),
+	).$\;
 }
 
-sub print { 
+sub print {
 	my ($isLogin) = shift;
 	print get($isLogin);
 }

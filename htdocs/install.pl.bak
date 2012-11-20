@@ -1,0 +1,185 @@
+#!/usr/bin/perl -w
+use strict;
+use utf8;
+use DBI;
+use CGI qw(:standard);
+use CGI::Carp 'fatalsToBrowser';
+use config;
+use Shared;
+use Digest::MD5 qw(md5_hex);
+
+my %steps = (
+	1 => \&step1,
+	2 => \&step2,
+	3 => \&step3,
+);
+
+print header(-charset => 'utf-8');
+print start_html(
+	-lang => 'ru-RU',
+	-title => 'Index',
+);
+
+my $step;
+
+($step = param('step')
+		or defined param('login')
+		and $step = 3
+	) and &{ $steps{$step}}
+	or (print p("Wrong step number. Error!"));
+
+print end_html();
+
+sub step1 {
+	print h1("Instalation: step 1. Checking config file.");
+	my $ulCont;
+	foreach (@Config::paramList) {
+		$ulCont .= li(b($_).': '.eval("\$Config::$_"));
+	}
+	print ul($ulCont);
+	print p("If they are right, go to the next step. Otherwise, edit config.pm in site folder.");
+
+	print button(
+		-name => 'nextStep',
+		-value => 'Next',
+		-onclick => "javascript: location.href='install.pl?step=2'",
+	);
+}
+
+sub step2 {
+	print h1("Instalation: step 2. Creating tables.");
+
+	my $usersQuery = qq(
+		create table if not exists Users (
+			id serial primary key,
+			login varchar(255) not null unique,
+			password char(16) not null,
+			email varchar(255) not null,
+			city varchar(255),
+			name varchar(255),
+			phone char(20),
+			adress varchar(255),
+			level int
+		);
+		
+		create index on Users (login);
+	);
+	
+	print p("Connection to database...");
+	my $dbh = Shared::ConnectDB();
+	print p("Connection succes!");
+	print p("Creating tables...");
+	my $sth = $dbh->prepare($usersQuery);
+	$sth->execute();
+
+	my %button = (
+		-name => 'nextStep',
+		-value => 'Next',
+		-onclick => "javascript: location.href='install.pl?step=3'",
+	);
+
+	if ($DBI::errstr) {
+		print p({-style => 'color:red'}, $DBI::errstr);
+		print p({-style => 'color:red'}, "Please, solve the problems before next step.");
+		print button({%button, -disabled => 1});
+	} else {
+		print p("Creating tables success!");
+		print button(\%button);
+	}
+}
+
+sub step3 {
+	print h1("Instalation: step 3. Creation of admin account");
+	
+	my ($login, $password, $email, $isSended);
+	defined ($login = param('login'))
+		and ($isSended = 1);
+	$password = param('pass');
+	$email = param('email');
+	$email = Shared::NormalEmail($email);
+
+	if ($isSended) {
+		if ($login eq '' or $password eq '') {
+			print p({-style => 'color:red'}, "All fields must be filled.");
+		}
+	
+		if (length $password < 8) {
+			$password = '';
+			print p({-style => 'color:red'}, "Length of password must be 8 or more");
+		}
+
+		if ($email eq '') {
+			print p({-style => 'color:red'}, "Wrong email!");
+		}
+	}
+
+	if ($isSended && $login && $password && $email) {
+		print p("Connection to database...");
+		my $dbh = Shared::ConnectDB();
+		print p("Connection succes!");
+
+		my $q = qq(
+			insert into Users (login, password, email, level)
+			values (?, ?, ?, ?)
+		);
+		
+		$password = md5_hex($password + $Config::salt);
+		my $sth = $dbh->prepare($q);
+		$sth->execute($login, $password, $email, 0);
+		
+		if ($DBI::errstr) {
+			print p({-style => 'color:red'}, $DBI::errstr);
+		};
+
+		print p("Congratulations! This is a last step. Please, delete ".b('install.pl')." from site directory");
+	} else {
+		print start_form(
+			-name => 'registration',
+			-method  => 'POST',
+			-action => 'install.pl?step=3',
+		);
+		print table(
+			Tr(
+				td("Login:"),
+				td(textfield(
+					-name => 'login',
+					-value => 'admin',
+					-size => 30,
+					-maxlength => 30,
+				))
+			),
+			Tr(
+				td("Password"),
+				td(password_field(
+					-name => 'pass',
+					-value => '',
+					-size => 30,
+					-maxlength => 32,
+				)),
+				td("(Max length is 32 symbols)"),
+			),
+			Tr(
+				td("Email:"),
+				td(textfield(
+					-name => 'email',
+					-value => '',
+					-size => 30,
+					-maxlength => 100,
+				))
+			),
+			Tr(
+				td(),
+				td(),
+				td({-align => 'right'},
+					submit(
+						-name => 'Submit',
+					)
+				),
+			),
+		);
+	
+		print end_form();
+	}
+}
+
+1;

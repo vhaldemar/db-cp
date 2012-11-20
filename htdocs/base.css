@@ -31,6 +31,14 @@ body {
 #header {
 	height: 80px;
 	background: #FFE680;
+	
+	position: relative;
+	width: 980px;
+	left: 10px;
+		
+	border-radius: 0 0 20px 20px;
+	-moz-border-radius:0 0 20px 20px; 
+	-khtml-border-radius: 0 0 20px 20px;
 }
 
 #middle {
@@ -49,23 +57,49 @@ body {
 #container {
 	width: 100%;
 	float: left;
-	overflow: hidden;
+	//overflow: hidden;
 }
 #content {
 	padding: 0 0 0 270px;
 }
 
+#main {	
+	background: gray;
+	float: right;
+	width: 720px;
+	height: auto;
+	min-height: 400px;
+	position: relative;
+	top: 10px;
+	bottom: 90px;
+	visibility: visible;
+	padding: 5px;
+	margin: 0 0 20px 0;
+		
+	border-radius: 20px 0 0 20px;
+	-moz-border-radius: 20px 0 0 20px; 
+	-khtml-border-radius: 20px 0 0 20px;
+}
+
 #menu {
 	float: left;
 	width: 250px;
+	height: 400px;
 	margin-left: -100%;
 	position: relative;
+	top: 10px;
+	bottom: 90px;
 	background: #B5E3FF;
+	padding: 5px;
+				
+	border-radius: 0 20px 20px 0;
+	-moz-border-radius: 0 20px 20px 0; 
+	-khtml-border-radius: 0 20px 20px 0;
+	
 }
 
 
-/* Footer
------------------------------------------------------------------------------*/
+
 #footer {
 	width: 990px;
 	margin: -80px auto 0;
@@ -73,4 +107,8 @@ body {
 	background: #BFF08E;
 	position: relative;
 	padding: 0 5px;
+			
+	border-radius: 20px 20px 0 0;
+	-moz-border-radius: 20px 20px 0 0; 
+	-khtml-border-radius: 20px 20px 0 0;
 }

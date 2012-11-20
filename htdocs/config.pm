@@ -2,11 +2,23 @@
 package Config;
 use strict;
 
-# CONFIG SECTION
+# CONFIG SECTIO
 
 BEGIN {
+	our @paramList = qw(
+		siteName
+		root
+		dbHost
+		dbName
+		dbUser
+		dbPass
+		dbPort
+	);
+
 	our $siteName = 'dbcp';
 	our $root = '/home/vhaldemar/git/db-cp/htdocs';
+	our $passSalt = '';
+
 	our $dbHost = 'localhost';
 	our $dbName = 'dbcp';
 	our $dbUser = 'postgres';
