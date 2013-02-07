@@ -7,7 +7,7 @@ use CGI::Carp 'fatalsToBrowser';
 
 $\ = "\n";
 
-use lib "/home/vhaldemar/git/db-cp/htdocs";
+use lib "/home/lipkin/git/db-cp/htdocs";
 use config;
 
 1;

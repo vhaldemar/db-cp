@@ -7,14 +7,12 @@ use modules;
 
 local $\ ||= "\n";
 
-
 # Call the install script
 if (-e $Config::root.'/install.pl') {
 	local $\ = "\n";
 	print "Status: 301 Moved Permanently";
 	print "Location: /install.pl?step=1\n";
 } else {
-	
 	require 'Module/Header.pm' or die $!;
 	require 'Module/Menu.pm' or die $!;
 	require 'Module/Footer.pm' or die $!;

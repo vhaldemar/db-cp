@@ -21,6 +21,7 @@ sub ConnectDB {
 
 sub NormalEmail {
 	my $email = shift;
+	return if !defined $email;
 	$email = lc $email;
 	$email =~ s/^\s+//;
 	$email =~ s/\s+$//;
@@ -34,6 +35,10 @@ sub NormalEmail {
 sub error {
 	my $text = shift;
 	return p({-class => 'error_text'}, $text);
+}
+
+sub Escape {
+	my $str = shift;
 }
 
 1;
