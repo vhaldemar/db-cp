@@ -2,12 +2,16 @@ package Auth;
 use strict;
 use warnings;
 use CGI qw(:standard);
+use CGI::Cookie;
+use CGI::Session;
 use Shared;
+use Digest::MD5 qw(md5_hex);
 
 sub get {
 	my $login = Shared::Escape(param('login'));
 	my $password = Shared::Escape(param('password'));
 	my @errors;
+	my $inner;
 
 	push @errors, "Заполните имя пользователя!"
 		if defined $login and !$login;
@@ -15,10 +19,37 @@ sub get {
 		if defined $password and !$password;
 	
 	if ($login && $password) {
+		my $selectUser = qq(
+			SELECT login, name
+				FROM users
+			WHERE login = ? and password = ?
+		);
+
+		$password = md5_hex($password);
+		my $dbh = Shared::ConnectDB();
+		my $sth = $dbh->prepare($selectUser);
+		$sth->execute($login, $password);
 		
+		if (my $ref = $sth->fetchrow_hashref()) {
+			my $name = $ref->{name} || $ref->{login};
+			$inner .= p(
+				"Добрый день, $name. В течение 5 секунд вы будете перенаправлены на главную страницу."
+			) . script(
+				qq(
+					var delay = 5000;
+					setTimeout("document.location.href='/?main'", delay);
+				)
+			);
+			return div({-id => 'login'}, $inner).$\;
+		} else {
+			push @errors, 'Неправильное имя пользователя или пароль!';
+		}
+
+#		my $session = new CGI::Session();
+#		print $session->id();
+#		$session->delete();
 	}
 
-	my $inner;
 	$inner .= start_form(
 		-name => 'auth',
 		-method => 'post',

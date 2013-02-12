@@ -16,7 +16,7 @@ BEGIN {
 	);
 
 	our $siteName = 'dbcp';
-	our $root = '/home/lipkin/git/db-cp/htdocs';
+	our $root = '/home/vhaldemar/git/db-cp/htdocs';
 	our $passSalt = '';
 
 	our $dbHost = 'localhost';
