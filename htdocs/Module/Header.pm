@@ -2,13 +2,22 @@ package Header;
 use strict;
 use warnings;
 use CGI qw(:standard);
+use Shared;
 
 sub get {
-	my ($isLogin) = shift;
+	my $pageParams = shift;
+	my $inner;
 
-	my $inner = 'This is a header';
-	if ($isLogin) {
-
+	my $session = $pageParams->{session};
+	if ($session) {
+		$inner .= p(
+			"Пользователь: ".($session->param('name') || $session->param('login'))
+		) . p(
+				a(
+					{-href => '/?logout'},
+					'Выйти',
+				),
+		);
 	} else {
 
 	}
@@ -16,9 +25,4 @@ sub get {
 	return div({-id => 'header'}, $inner).$\;
 }
 
-sub print {
-	my ($isLogin) = shift;
-	print get($isLogin);
-
-}
 1;

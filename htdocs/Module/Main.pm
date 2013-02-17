@@ -2,23 +2,22 @@ package Main;
 use strict;
 use warnings;
 use CGI qw(:standard);
+use Shared;
 
-sub get { 
-	my ($isLogin) = shift;
+sub get {
+	my $pageParams = shift;
 
 	my $inner = 'This is a main page';
-	if ($isLogin) {
+
+	if ($pageParams->{session}) {
 		$inner .= " (login)";
 	} else {
 		$inner .= " (not login)";
 	}
 
-	return div({-id => 'main'}, $inner).$\;
-}
+	$inner .= p('Параметры: ' . join (', ', param()));
 
-sub print {
-	my ($isLogin) = shift;
-	print get($isLogin);
+	return div({-id => 'main'}, $inner).$\;
 }
 
 1;

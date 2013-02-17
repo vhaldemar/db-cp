@@ -1,0 +1,14 @@
+.cat_cont{
+/*	display:none; */
+	margin-bottom:3px;
+	margin-top:3px;
+	border:1px dotted #cccccc;
+	padding:3px 5px;
+	background-color: #E5F5FF;
+}
+
+/*.cat_link{
+	font-weight: bold;
+	line-height: 150%;
+	border:1px dotted #cccccc;
+}*/

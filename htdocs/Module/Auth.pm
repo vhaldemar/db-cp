@@ -8,6 +8,12 @@ use Shared;
 use Digest::MD5 qw(md5_hex);
 
 sub get {
+	my $pageParams = shift;
+	if ($pageParams->{session}) {
+		$pageParams->{unauthorizedAction} = 'Вы уже зашли в систему!';
+		return '';
+	}
+
 	my $login = Shared::Escape(param('login'));
 	my $password = Shared::Escape(param('password'));
 	my @errors;
@@ -17,10 +23,12 @@ sub get {
 		if defined $login and !$login;
 	push @errors, "Заполните пароль!"
 		if defined $password and !$password;
+	push @errors, "Ваша сессия истекла!"
+		if defined param('expired');
 	
 	if ($login && $password) {
 		my $selectUser = qq(
-			SELECT login, name
+			SELECT id, login, name
 				FROM users
 			WHERE login = ? and password = ?
 		);
@@ -31,6 +39,11 @@ sub get {
 		$sth->execute($login, $password);
 		
 		if (my $ref = $sth->fetchrow_hashref()) {
+			my $session = new CGI::Session();
+			$session->param('name', $ref->{name} || '');
+			$session->param('login', $ref->{login});
+			$session->param('id', $ref->{id});
+
 			my $name = $ref->{name} || $ref->{login};
 			$inner .= p(
 				"Добрый день, $name. В течение 5 секунд вы будете перенаправлены на главную страницу."
@@ -40,14 +53,12 @@ sub get {
 					setTimeout("document.location.href='/?main'", delay);
 				)
 			);
+			$pageParams->{header} = $session->header(-location => '?main');
 			return div({-id => 'login'}, $inner).$\;
 		} else {
 			push @errors, 'Неправильное имя пользователя или пароль!';
 		}
 
-#		my $session = new CGI::Session();
-#		print $session->id();
-#		$session->delete();
 	}
 
 	$inner .= start_form(
@@ -97,11 +108,6 @@ sub get {
 	
 	$inner .= end_form();
 	return div({-id => 'login'}, $inner).$\;
-}
-
-sub print {
-	my ($isLogin) = shift;
-	print get($isLogin);
 }
 
 1;

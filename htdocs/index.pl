@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
-use CGI::Carp 'fatalsToBrowser';
 use CGI qw(:standard);
 use config;
 use modules;
+use Shared;
 
 local $\ ||= "\n";
 
@@ -17,33 +17,58 @@ if (-e $Config::root.'/install.pl') {
 	require 'Module/Menu.pm' or die $!;
 	require 'Module/Footer.pm' or die $!;
 
-# Start html
-	print header(-charset => 'utf-8');
-	print start_html(
-		-lang => 'ru-RU',
-		-title => 'Index',
-		-style => {'src' => 'base.css'},
-	);
-	
-	my ($wrapper, $middle);
-	$middle .= div(
-		{-id => 'container'},
-		getContent(),
-	);
-	$middle .= Menu::get();
+	my $content;
+	my %pageParams = %Config::defPageParams;
+	$pageParams{session} = Shared::getSession();
 
-	$wrapper .= Header::get();
-	$wrapper .= div({-id => 'middle'}, $middle);
+	if (
+		$pageParams{session}
+			&& $pageParams{session}->is_expired()
+	) {
+		$pageParams{redirect} = '?auth&expired=1';
+		require 'Module/Logout.pm' or die $!;
+		Logout::killSession(\%pageParams);
+	} else {
+		$content = getContent(\%pageParams);
+	}
 
-	print div({-id => 'wrapper'}, $wrapper);
-	
-	Footer::print();
-	
-	print end_html();
+	printPage($content, \%pageParams);
+}
+
+sub printPage {
+	my $content = shift;
+	my $pageParams = shift;
+
+	if (my $dest = $pageParams->{redirect}) {
+		local $\ = "\n";
+		print "Status: 302 Moved";
+		print "Location: $dest\n";
+	} elsif (my $header = $pageParams->{header}) {
+		print $header;
+	} else {
+		print header(-charset => 'utf-8');
+		print start_html(
+			-lang => 'ru-RU',
+			-title => 'Index',
+			%{ pageParamsToCGIFormat($pageParams) },
+		);
+		
+		my ($wrapper, $middle);
+		$middle .= div(
+			{-id => 'container'},
+			$content,
+		);
+		$middle .= Menu::get($pageParams);
+		$wrapper .= Header::get($pageParams);
+		$wrapper .= div({-id => 'middle'}, $middle);
+		print div({-id => 'wrapper'}, $wrapper);
+		Footer::print();
+		print end_html();
+	}
 }
 
 sub getContent {
-	my $isLogin = shift;
+	my $pageParams = shift;
 	my @params = param();
 	my $page = 'main';
 	my $content;
@@ -59,9 +84,33 @@ sub getContent {
 		} elsif (Modules::isPage($_)) {
 			$page = $_;
 			last;
+		} elsif ($_ eq 'print_params') {
+			$content .= join (', ', @params);
 		}
 	}
-
-	return Modules::getPage($page);
+	$pageParams->{page} = $page;
+	$content .= Modules::getPage($page, $pageParams);
 }
 
+sub pageParamsToCGIFormat {
+	my $pageParams = shift;
+	my %result;
+	my @scripts;
+
+	while (my $src = each %{ $pageParams->{css} }) {
+		push @{ $result{'-style'} }, {-src => "css/$src"};
+	}
+
+	
+	while (my ($src, $p) = each %{ $pageParams->{javascript} }) {
+		push @scripts, {-type=>"text/javascript", -src => "js/$src", -p => $p};
+	}
+
+	@scripts = sort {$a->{'-p'} <=> $b->{'-p'}} @scripts;
+
+	foreach (@scripts) {
+		delete $_->{-p};
+		push @{ $result{'-script'} }, $_;
+	}
+	return \%result;
+}

@@ -4,14 +4,7 @@ use warnings;
 use CGI qw(:standard);
 
 sub get {
-	my ($isLogin) = shift;
-
-	my $inner = 'This is a footer';
-	if ($isLogin) {
-
-	} else {
-
-	}
+	my $inner .= p('Параметры: ' . join (', ', param()));
 
 	return div({-id => 'footer'}, $inner).$\;
 }

@@ -3,34 +3,83 @@ use strict;
 use warnings;
 
 use CGI qw(:standard);
+use DBI;
 use Shared;
-
+use Digest::MD5 qw(md5_hex);
 
 my $fieldSize = 30;
 
-sub get {
+sub addUser { 
+	my ($login, $password, $email) = @_;
+	$password = md5_hex($password);
+	my $insertUser = qq!
+		INSERT INTO users(
+			login, password, email, registration)
+		VALUES (?, ?, ?, ?);
+	!;
+
+	my $dbh = Shared::ConnectDB();
+	my $sth = $dbh->prepare($insertUser);
+	$sth->execute($login, $password, $email, scalar localtime);
+	$dbh->disconnect();
+
+	if ($DBI::errstr) {
+		$DBI::errstr;
+	} else {
+		p(
+			"Вы были успешно зарегистрированы! Сейчас вас перенаправят на страницу авторизации."
+		) . script(
+			qq(
+				var delay = 5000;
+				setTimeout("document.location.href='/?auth'", delay);
+			)
+		);
+	}
+}
+
+sub get { 
 	my $login = Shared::Escape(param('login'));
 	my $password = Shared::Escape(param('password'));
 	my $passwordSecond = Shared::Escape(param('password_second'));
 	my $email = Shared::NormalEmail(param('email'));
+	my $isSend = param('register');
 	my @errors;
+	my $inner;
 
-	push @errors, "Заполните имя пользователя!"
-		if defined $login and !$login;
-	push @errors, "Заполните пароль!"
-		if defined $password and !$password;
-	push @errors, "Заполните почту!"
-		if defined $email and !$email;
-	push @errors, "Пароли не совпадают!"
-		if defined $password
-			and defined $passwordSecond
-			and $password ne $passwordSecond;
-
-	if ($login and !@errors) {
-		
+	if ($isSend) {
+		push @errors, "Заполните имя пользователя!"
+			if !$login;
+		push @errors, "Заполните пароль!"
+			if !$password;
+		push @errors, "Повторите пароль!"
+			if !$passwordSecond;
+		push @errors, "Заполните почту!"
+			if !$email;
+		push @errors, "Пароли не совпадают!"
+			if defined $password
+				and defined $passwordSecond
+				and $password ne $passwordSecond;
 	}
 
-	my $inner;
+	if ($isSend && !@errors) {
+		my $selectUser = qq(
+			SELECT login
+				FROM users
+			WHERE login = ?
+		);
+	
+		my $dbh = Shared::ConnectDB();
+		my $sth = $dbh->prepare($selectUser);
+		$sth->execute($login);
+
+		if ($sth->rows()) {
+			push @errors, 'Пользователь с таким именем уже существует!';
+		} else {
+			return div({-id => 'registration'}, addUser($login, $password, $email).$\);
+		}
+		$dbh->disconnect();
+	}
+
 	$inner .= start_form(
 		-name => 'register',
 		-method => 'post',
@@ -79,13 +128,13 @@ sub get {
 		),
 		Tr(
 			td(),
-			td({-align => 'right'},
+			td({-class => 'change'},
 				submit(
 					-name => 'Зарегистрироваться',
 				)
 			),
 		),
-		map {Tr(td(Shared::error($_)))} @errors,
+		map {Tr(td({-colspan => 2},Shared::error($_)))} @errors,
 	);
 	
 	$inner .= end_form();
